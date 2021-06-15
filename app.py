@@ -1,22 +1,25 @@
 from flask import Flask, request, abort
 
+from translate import Translator
+
 from linebot import (
     LineBotApi, WebhookHandler
 )
 from linebot.exceptions import (
     InvalidSignatureError
 )
-from linebot.models import (
-    MessageEvent, TextMessage, TextSendMessage,
-)
+from linebot.models import *
+
 
 app = Flask(__name__)
+#translator = Translator (from_lang='zh-Hant', to_lang='en')
+
+lang='en'
 
 # Channel Access Token
 line_bot_api = LineBotApi('+xchbYoAmUluiN1cisUAlk8YtZK8RUFitCtGdWVxLQrnr39Jn/m+OPzfIVUaj9sg4H48eEKneYgf/sNNVTqNbopIWTDBqL2WMzm5rKVVObTyYb1S5+EgQFqe25onAj38jU+/vAVzewkN/va9YPeZbQdB04t89/1O/w1cDnyilFU=')
 # Channel Secret
 handler = WebhookHandler('3e71dd9e783b1672d9a451fa45bd54c6')
-
 
 # 監聽所有來自 /callback 的 Post Request
 @app.route("/callback", methods=['POST'])
@@ -38,24 +41,54 @@ def callback():
 # 處理訊息
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-
-    text=event.message.text
-
-    if (text=="Hi"):
-        reply_text = "Hello"
-    elif(text=="你好"):
-        reply_text = "哈囉"
-    elif(text=="機器人"):
-        reply_text = "叫我嗎"
+    global lang
+    if event.message.text == "中翻英":
+        msg = TextSendMessage(text = '語言設定為英文') 
+        lang = 'en'
+    elif event.message.text == "中翻日":
+        msg =  TextSendMessage(text = '語言設定為日文')
+        lang='ja'
+    elif event.message.text == "圖片秀":
+        msg =  image_carousel_message1() 
     else:
-        reply_text = text
-#如果非以上的選項，就會學你說話
+        translator = Translator (from_lang='zh-Hant', to_lang=lang)
+        msg =  TextSendMessage(text = translator.translate(event.message.text))     
+    line_bot_api.reply_message(event.reply_token, msg)
 
-    message = TextSendMessage(reply_text)
-    line_bot_api.reply_message(event.reply_token, message)
 
-   
+def image_carousel_message1():
+    message = TemplateSendMessage(
+        alt_text='圖片旋轉木馬',
+        template=ImageCarouselTemplate(
+            columns=[
+                ImageCarouselColumn(
+                    image_url="https://www.nups.ntnu.edu.tw/upfiles/univ-expo/%E5%8D%97%E9%83%A8/%E9%AB%98%E9%9B%84%E5%B8%82/%E6%8A%80%E5%B0%88%E6%A0%A1%E9%99%A2/%E6%96%87%E8%97%BB/%E6%96%87%E8%97%BB-pic02.jpg",
+                    action=URITemplateAction(
+                        label="文藻校園-1",
+                        uri="https://www.nups.ntnu.edu.tw/upfiles/univ-expo/%E5%8D%97%E9%83%A8/%E9%AB%98%E9%9B%84%E5%B8%82/%E6%8A%80%E5%B0%88%E6%A0%A1%E9%99%A2/%E6%96%87%E8%97%BB/%E6%96%87%E8%97%BB-pic02.jpg"
+                    )
+                ),
+                ImageCarouselColumn(
+                    image_url="https://www.nups.ntnu.edu.tw/upfiles/univ-expo/%E5%8D%97%E9%83%A8/%E9%AB%98%E9%9B%84%E5%B8%82/%E6%8A%80%E5%B0%88%E6%A0%A1%E9%99%A2/%E6%96%87%E8%97%BB/%E6%96%87%E8%97%BB-pic03.jpg",
+                    action=URITemplateAction(
+                        label="文藻校園-2",
+                        uri="https://www.nups.ntnu.edu.tw/upfiles/univ-expo/%E5%8D%97%E9%83%A8/%E9%AB%98%E9%9B%84%E5%B8%82/%E6%8A%80%E5%B0%88%E6%A0%A1%E9%99%A2/%E6%96%87%E8%97%BB/%E6%96%87%E8%97%BB-pic03.jpg"
+                    )
+                ),
+                
+                ImageCarouselColumn(
+                    image_url="https://www.nups.ntnu.edu.tw/upfiles/univ-expo/%E5%8D%97%E9%83%A8/%E9%AB%98%E9%9B%84%E5%B8%82/%E6%8A%80%E5%B0%88%E6%A0%A1%E9%99%A2/%E6%96%87%E8%97%BB/%E6%96%87%E8%97%BB-pic04.jpg",
+                    action=URITemplateAction(
+                        label="文藻校園-3",
+                        uri="https://www.nups.ntnu.edu.tw/upfiles/univ-expo/%E5%8D%97%E9%83%A8/%E9%AB%98%E9%9B%84%E5%B8%82/%E6%8A%80%E5%B0%88%E6%A0%A1%E9%99%A2/%E6%96%87%E8%97%BB/%E6%96%87%E8%97%BB-pic04.jpg"
+                    )
+                )
+            ]
+        )
+    )
+    return message
 
+# requirements.txt 中要加入 translate , 也就是要 pip install traslate
 import os
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
